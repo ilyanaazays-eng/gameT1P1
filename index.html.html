@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ICT Island Quest</title>
+<style>
+:root{--ink:#1d2b3a;--sea:#2b8fc7;--grass:#8fd14f;--sand:#f1d58a;--wood:#a8693a;--card:#fffdf5;--gold:#f0a500;--ok:#1b7f3b;--bad:#b3261e}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.5 "Trebuchet MS","Segoe UI",sans-serif;color:var(--ink);background:#dff1fa}
+button,input{font:inherit}
+button{cursor:pointer;border:2px solid var(--ink);background:#fff;border-radius:10px;padding:.4rem .8rem;color:var(--ink)}
+button:hover:not(:disabled){background:#fff3c4}
+button:disabled{opacity:.5;cursor:not-allowed}
+:focus-visible{outline:4px solid #ff7a00;outline-offset:2px}
+header{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;padding:.6rem 1rem;background:var(--ink);color:#fff}
+header h1{font-size:1.3rem;margin:0 .8rem 0 0;letter-spacing:.04em}
+header input{width:9rem;padding:.25rem .5rem;border-radius:8px;border:2px solid var(--gold)}
+.chip{background:#ffffff22;padding:.2rem .6rem;border-radius:99px}
+.grow{flex:1;min-width:190px;display:flex;gap:.4rem;align-items:center}
+progress{flex:1;height:14px}
+#main{display:flex;align-items:flex-start;gap:.8rem;padding:.8rem}
+#side{flex:0 0 280px;background:var(--card);border:3px solid var(--wood);border-radius:14px;padding:.8rem;font-size:.92rem}
+#side[hidden]{display:none}
+#side h2{font-size:1rem;margin:.6rem 0 .3rem}
+#side ul{list-style:none;margin:0;padding:0}
+#side li button{width:100%;text-align:left;margin:.15rem 0;display:flex;flex-direction:column}
+#side small{font-weight:700}
+#mapwrap{flex:1;min-width:0}
+#map{position:relative;aspect-ratio:1000/640;border:4px solid var(--wood);border-radius:16px;overflow:hidden;background:#4fb3d9}
+#map svg{position:absolute;inset:0;width:100%;height:100%}
+.river{stroke-dasharray:18 14;animation:flow 3s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-64}}
+.cloud{animation:drift 40s linear infinite alternate}
+.cloud.b{animation-duration:55s}
+@keyframes drift{to{transform:translateX(120px)}}
+.st{position:absolute;transform:translate(-50%,-50%);width:clamp(54px,11%,110px);padding:.15rem;text-align:center;font-size:clamp(.55rem,1.3vw,.8rem);line-height:1.15;background:#fffdf5;border-width:3px}
+.st .ic{font-size:clamp(1rem,3vw,1.8rem);display:block}
+.st b{display:block}
+.st{box-shadow:0 5px 0 #0005,0 10px 14px #0004;border-radius:14px;background-image:linear-gradient(#fff,#fff3cf)}
+.st.locked{background-image:linear-gradient(#e3e7ea,#bfc5ca)}.st.done{background-image:linear-gradient(#eaffe3,#bdeeb0)}.st.wait{background-image:linear-gradient(#f5eeff,#dccbff)}
+.wave{animation:wv 4s ease-in-out infinite alternate}@keyframes wv{to{transform:translateX(26px)}}
+.st.last{border-width:4px}.st.last::before{content:"FINAL";position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:#f0a500;color:#1d2b3a;font-size:.6rem;font-weight:800;padding:0 .45rem;border-radius:99px}
+.boat{animation:bob 3s ease-in-out infinite alternate}@keyframes bob{to{transform:translate(0,5px) rotate(2deg)}}
+.st.locked{background:#cfd4d8;border-style:dashed}
+.st.avail{border-color:var(--gold);animation:pulse 1.8s ease-in-out infinite}
+.st.prog{border-color:#ff7a00}
+.st.done{background:#d8f5d0;border-color:var(--ok)}
+.st.wait{background:#efe6ff;border-style:dotted}
+@keyframes pulse{50%{box-shadow:0 0 0 8px #f0a50066}}
+#panel{position:fixed;inset:0;background:#0009;display:flex;align-items:center;justify-content:center;padding:.6rem;z-index:5}
+#panel[hidden]{display:none}
+.card{position:relative;background:var(--card);border:4px solid var(--wood);border-radius:16px;max-width:720px;width:100%;max-height:92vh;overflow:auto;padding:1.2rem}
+.card .x{position:absolute;right:.6rem;top:.6rem}
+.card h2{margin:0 2rem .6rem 0;font-size:1.3rem}
+.note{background:#eef7ff;border-left:5px solid var(--sea);padding:.5rem .8rem;margin:.5rem 0;border-radius:6px}
+.note small{color:#4a5a6a}
+.opt{display:block;width:100%;text-align:left;margin:.4rem 0;padding:.6rem .8rem}
+.opt[aria-pressed=true]{background:#fff3c4;border-width:4px}
+.opt.right{background:#d8f5d0;border-color:var(--ok)}
+.opt.wrong{background:#fbe0dd;border-color:var(--bad)}
+.fb{padding:.6rem .8rem;border-radius:8px;background:#f3f3f3;margin:.6rem 0}
+.row{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.8rem}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+td,th{border:1px solid #999;padding:.3rem .5rem;text-align:left}
+.big{font-size:2rem}
+@media (max-width:820px){#main{flex-direction:column}#side{flex:none;width:100%}header h1{width:100%}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+@media print{header,#main,.row,.x{display:none}#panel{position:static;background:none;display:block}.card{border:0;max-height:none}}
+
+</style>
+</head>
+<body>
+<header>
+  <h1>🏝️ ICT ISLAND QUEST</h1>
+  <label>Player <input id="nick" maxlength="16" aria-label="Player nickname"></label>
+  <span class="chip">⭐ Stars <b id="stars">0</b></span>
+  <span class="chip">🏆 Points <b id="pts">0</b></span>
+  <span class="chip">✅ Stations <b id="done">0</b>/<span id="tot">9</span></span>
+  <span class="chip grow">Progress <progress id="bar" max="100" value="0" aria-label="Overall progress through available stations"></progress> <b id="pct">0%</b></span>
+  <button id="snd" aria-pressed="true">🔊 Sound on</button>
+  <button id="reset">Reset progress</button>
+  <button id="menu" aria-expanded="true" aria-controls="side">☰ Topics</button>
+</header>
+<div id="main">
+  <aside id="side" aria-label="Topics"></aside>
+  <section id="mapwrap" aria-label="Island map"><div id="map"></div></section>
+</div>
+<section id="panel" hidden role="dialog" aria-modal="true" aria-labelledby="ptitle"></section>
+<script>
+"use strict";
+/* ICT ISLAND QUEST. Source: "Topic 1 - Information Technology Literacy (Part II)" PDF only.
+   Question fields: q = text, c = correct answer (kept apart from the wrong options w),
+   e = explanation from slide, p = PDF page/slide number. A question without p, c or e is never shown. */
+const KEY = "ictIslandQuestV2", $ = s => document.querySelector(s);
+const Q = (q, c, w, e, p) => ({ q, c, w, e, p });
+const TF = (q, t, e, p) => Q("True or false: " + q, t ? "True" : "False", [t ? "False" : "True"], e, p);
+const N = (t, p) => ({ t, p });
+
+const S = [
+{ id: 1, m: 1, t: "Introduction to Information Technology", i: "💡", x: 120, y: 500,
+  notes: [N("ICT refers to technologies used to manage, process, and share information, especially through computers and communication tools.", 3),
+    N("Information Technology (IT): use of computers and software to handle information. Includes hardware (PCs, servers) and software (databases, apps). Purpose: to store, process, and manage data.", 4),
+    N("Communication Technology: transfers information over long distances using electronic tools. Includes telephones, mobile phones, Internet, satellite, email. Enables real-time communication and global collaboration.", 5)],
+  q: [
+    Q("According to the slides, ICT refers to technologies used to…", "manage, process, and share information, especially through computers and communication tools", ["connect network segments or network devices", "respond to requests across a computer network", "transmit data from one point to another in a given amount of time"], "ICT refers to technologies used to manage, process, and share information, especially through computers and communication tools.", 3),
+    Q("Which are listed as IT hardware?", "PCs and servers", ["Telephones and mobile phones", "Internet, satellite, email", "Databases and apps"], "IT includes hardware (PCs, servers) and software (databases, apps).", 4),
+    Q("Which are listed as IT software?", "Databases and apps", ["PCs and servers", "Telephones and mobile phones", "Internet, satellite, email"], "IT includes hardware (PCs, servers) and software (databases, apps).", 4),
+    Q("The purpose of Information Technology is…", "to store, process, and manage data", ["to transfer information over long distances using electronic tools", "to allow restricted access to members of an organization", "to connect network segments"], "Purpose: To store, process, and manage data.", 4),
+    TF("Communication Technology transfers information over long distances using electronic tools.", true, "Communication Technology transfers information over long distances using electronic tools.", 5),
+    Q("What does Communication Technology enable?", "Real-time communication and global collaboration", ["Storing, processing, and managing data", "Restricted access to members of an organization", "Connecting network segments"], "Enables: real-time communication and global collaboration.", 5)] },
+{ id: 2, m: 1, t: "Information Technology Literacy", i: "📖", x: 300, y: 370,
+  notes: [N("Scott (2012) defines information literacy as “the ability to find, evaluate, and use information efficiently, effectively, and ethically to answer an information need”.", 6),
+    N("Bothma (2008) defines information literacy as a set of abilities to know when information is needed, to be able to find and evaluate information and use the information that was found.", 6)],
+  q: [
+    Q("Which definition of information literacy is attributed to Scott (2012)?", "The ability to find, evaluate, and use information efficiently, effectively, and ethically to answer an information need", ["A set of abilities to know when information is needed, to find and evaluate information and use the information found", "Technologies used to manage, process, and share information", "The use of computers and software to handle information"], "Slide 6 gives this as Scott (2012)'s definition.", 6),
+    TF("Bothma (2008) defines information literacy as a set of abilities to know when information is needed, to find and evaluate information and to use what was found.", true, "This is Bothma (2008)'s definition on the slide.", 6),
+    TF("Scott (2012) defines information literacy as a set of abilities to know when information is needed.", false, "That wording belongs to Bothma (2008). Scott (2012) says the ability to find, evaluate, and use information efficiently, effectively, and ethically.", 6),
+    Q("Which ability appears in Bothma's (2008) definition but not in Scott's (2012)?", "Knowing when information is needed", ["Finding information", "Evaluating information", "Using information"], "Bothma adds knowing when information is needed; finding, evaluating and using appear in both.", 6),
+    TF("Scott (2012) says information should be found, evaluated and used ethically as well as efficiently and effectively.", true, "Scott: “…efficiently, effectively, and ethically to answer an information need”.", 6)] },
+{ id: 3, m: 1, t: "Modem", i: "📡", x: 220, y: 205,
+  notes: [N("A modem is a physical networking device that connects various types of computers.", 12),
+    N("A modem translates signals between your Internet Service Provider (ISP) and your internal network, converting digital data to analog and vice versa.", 12)],
+  q: [
+    Q("A modem is…", "a physical networking device that connects various types of computers", ["a system that responds to requests across a computer network", "a device used to connect network segments or network devices", "a group of computers and network devices spanning a relatively small area"], "A modem is a physical networking device that connects various types of computers.", 12),
+    Q("A modem translates signals between…", "your ISP and your internal network", ["a client program and a server program", "two network segments", "a MAN and a WAN"], "A modem translates signals between your Internet Service Provider (ISP) and your internal network.", 12),
+    TF("A modem converts digital data to analog and vice versa.", true, "The slide says the modem converts digital data to analog and vice versa.", 12),
+    TF("A modem is a program that awaits and fulfills requests from client programs.", false, "The slide describes a modem as a physical networking device. The program that awaits and fulfills client requests is described under Server.", 12),
+    TF("In the modem slide, ISP stands for Internet Service Provider.", true, "The slide writes Internet Service Provider (ISP).", 12)] },
+{ id: 4, m: 1, t: "LAN", i: "🖧", x: 420, y: 115,
+  notes: [N("Network: two or more connected computers that can share resources such as data, printer, an internet connection, applications, or a combination of these.", 8),
+    N("Server: a system that responds to requests across a computer network to provide a network service.", 11),
+    N("Network switch: a device used to connect network segments or network devices.", 13),
+    N("Transmission media: Twisted pair is used widely for telecommunications and LANs. Fiber optic: strands of glass fibers in an insulated casing. Coaxial: central copper conductor protected by a metal shield.", 15),
+    N("LAN: a group of computers and network devices connected together, which spans a relatively small area. Connections must be high speed and relatively inexpensive (e.g., token ring or Ethernet). LANs transmit data at very fast rates with limited distance.", 17),
+    N("MAN: a larger network that usually spans several buildings in the same city and town; connects multiple geographically nearby LANs at high speed.", 18),
+    N("WAN: connects networks in larger geographic areas or the world. The technology is high speed and relatively expensive.", 19)],
+  q: [
+    Q("A LAN spans…", "a relatively small area", ["several buildings in the same city and town", "larger geographic areas or the world"], "A LAN spans a relatively small area.", 17),
+    TF("Token ring and Ethernet are given as examples of high-speed, relatively inexpensive LAN connections.", true, "The slide gives “(eg., token ring or Ethernet)”.", 17),
+    Q("Which network connects multiple geographically nearby LANs to one another at high speed?", "MAN", ["LAN", "WAN"], "MANs connect multiple geographically nearby LANs to one another at high speed.", 18),
+    TF("A WAN's technology is high speed and relatively expensive.", true, "WAN: the technology is high speed and relatively expensive.", 19),
+    Q("A network switch is a device used to…", "connect network segments or network devices", ["convert digital data to analog and vice versa", "await and fulfill requests from client programs"], "A network switch is a device used to connect network segments or network devices.", 13),
+    TF("A network refers to two or more connected computers that can share resources.", true, "The network refers to two or more connected computers that can share resources such as data, printer, an internet connection, applications, or a combination.", 8),
+    Q("Which cable is shown as used widely for telecommunications and LANs?", "Twisted pair", ["Fiber optic", "Coaxial cable"], "Twisted Pair: used widely for telecommunications and local area networks (LANs).", 15)] },
+{ id: 5, m: 2, t: "Internet and Intranet", i: "🌐", x: 580, y: 243,
+  notes: [N("The Internet generally allows everyone to access all network resources. An Intranet allows restricted access to only members of an organization. An Extranet expands that access by allowing non-members such as suppliers and customers to use company resources.", 23),
+    N("Comparison table: Access, Internet = Public (anyone can access it); Intranet = Private (only internal employees); Extranet = Private/Shared (employees + trusted partners).", 24),
+    N("Security: Internet = Lowest (highly vulnerable); Intranet = Highest (protected by strict firewalls); Extranet = Medium-High (controlled via VPNs/passwords).", 24),
+    N("Primary user: Internet = general global population; Intranet = organization members / staff. Purpose: Internet = information sharing, entertainment, commerce; Intranet = internal collaboration, HR portals, knowledge bases; Extranet = B2B transactions, supply chain tracking, project updates.", 24)],
+  q: [
+    Q("Which network generally allows everyone to access all network resources?", "Internet", ["Intranet", "Extranet"], "The Internet generally allows everyone to access all network resources.", 23),
+    Q("Which network allows restricted access to only members of an organization?", "Intranet", ["Internet", "Extranet"], "An Intranet allows restricted access to only members of an organization.", 23),
+    Q("Which network allows non-members such as suppliers and customers to use company resources?", "Extranet", ["Internet", "Intranet"], "An Extranet expands access by allowing non-members such as suppliers and customers to use company resources.", 23),
+    Q("In the comparison table, which has the Highest security (protected by strict firewalls)?", "Intranet", ["Internet", "Extranet"], "Security row: Intranet = Highest (protected by strict firewalls).", 24),
+    TF("In the comparison table, the Internet's security is listed as Lowest (highly vulnerable).", true, "Security row: Internet = Lowest (Highly vulnerable).", 24),
+    Q("Which network's purpose is listed as internal collaboration, HR portals, knowledge bases?", "Intranet", ["Internet", "Extranet"], "Purpose row: Intranet = internal collaboration, HR portals, knowledge bases.", 24),
+    Q("Which network's purpose is listed as B2B transactions, supply chain tracking, project updates?", "Extranet", ["Internet", "Intranet"], "Purpose row: Extranet = B2B transactions, supply chain tracking, project updates.", 24)] },
+{ id: 6, m: 2, t: "Bandwidth", i: "📶", x: 680, y: 448,
+  notes: [N("Bandwidth is the capacity of a wired or wireless network communications link to transmit the maximum amount of data from one point to another over a computer network or internet connection in a given amount of time (one second).", 26),
+    N("Highway analogy: a 10-lane highway has higher bandwidth than a 2-lane road because it can fit far more cars at the exact same moment.", 26),
+    N("Throughput is the actual amount of data, work, or material that passes through a system or machine within a specific period of time. Pipe diagram: Bandwidth = the bigger the inside of the pipe, the more water can flow; Throughput = the water that reaches the destination successfully.", 27),
+    N("Bandwidth vs Throughput: Bandwidth = maximum capacity of a network connection; focus: measures potential data transfer rate; analogy: width of a highway. Throughput = actual amount of data transmitted successfully over the network in a given time; focus: measures real performance or actual speed; analogy: number of cars that actually reach their destination.", 28)],
+  q: [
+    Q("Which term measures real performance or actual speed?", "Throughput", ["Bandwidth"], "Throughput: measures real performance or actual speed.", 28),
+    TF("Bandwidth measures the potential data transfer rate.", true, "Bandwidth: measures potential data transfer rate.", 28),
+    TF("A 10-lane highway has higher bandwidth than a 2-lane road because it can fit far more cars at the same moment.", true, "This is the highway analogy given on the Bandwidth slide.", 26),
+    Q("In the highway analogy, throughput is like…", "the number of cars that actually reach their destination on that highway", ["the width of a highway", "the number of lanes on the highway"], "Throughput: like the number of cars that actually reach their destination on that highway.", 28),
+    Q("In the pipe diagram, which term is “the water that reaches the destination successfully”?", "Throughput", ["Bandwidth", "Data"], "The diagram labels the water that reaches the destination successfully as Throughput.", 27),
+    Q("In the pipe diagram, “the bigger the inside of the pipe, the more water can flow” describes…", "Bandwidth", ["Throughput", "Data"], "The diagram labels this as Bandwidth.", 27),
+    TF("Bandwidth is the actual amount of data transmitted successfully over the network in a given time.", false, "That describes Throughput. Bandwidth is the maximum capacity of a network connection.", 28)] },
+{ id: 7, m: 2, t: "Satellite, Downlink, and Uplink", i: "🛰️", x: 840, y: 333,
+  notes: [N("Types of links: Uplinks from the earth stations to satellites. Downlinks from the satellites to the earth stations. Intersatellite links between the satellites.", 29)],
+  q: [
+    Q("Links from the earth stations to satellites are called…", "Uplinks", ["Downlinks", "Intersatellite links"], "Uplinks from the earth stations to satellites.", 29),
+    Q("Links from the satellites to the earth stations are called…", "Downlinks", ["Uplinks", "Intersatellite links"], "Downlinks from the satellites to the earth stations.", 29),
+    Q("Links between the satellites are called…", "Intersatellite links", ["Uplinks", "Downlinks"], "Intersatellite links between the satellites.", 29),
+    Q("In the slide diagram, the arrow from the Source Ground Station to the satellite is labelled…", "Uplink", ["Downlink"], "The diagram labels the arrow from the Source Ground Station to the satellite as Uplink.", 29),
+    TF("A downlink goes from a satellite to an earth station.", true, "Downlinks from the satellites to the earth stations.", 29),
+    TF("An uplink is a link between satellites.", false, "Links between satellites are intersatellite links; uplinks go from earth stations to satellites.", 29)] }
+];
+
+const LBL = { locked: ["🔒", "Locked"], avail: ["▶️", "Available"], prog: ["📝", "In progress"], done: ["✅", "Completed"], wait: ["⏳", "Awaiting lecture materials"] };
+const valid = q => q && q.p && q.c && q.e && Array.isArray(q.w) && q.w.length >= 1 && !q.w.includes(q.c);
+const vq = s => (s.q || []).filter(valid);
+const ACT = S.filter(s => vq(s).length);           // stations with authorised content
+const shuf = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0;[a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+let st = { name: "Explorer", res: {}, snd: true };
+try { Object.assign(st, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) { }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { } };
+
+function status(s) {
+  if (!vq(s).length) return "wait";
+  const r = st.res[s.id];
+  if (r && r.pass) return "done";
+  const k = ACT.indexOf(s);
+  if (k > 0 && !(st.res[ACT[k - 1].id] || {}).pass) return "locked";
+  return r ? "prog" : "avail";
+}
+const pts = () => Object.values(st.res).reduce((a, r) => a + r.best * 100, 0);
+const stars = () => Object.values(st.res).reduce((a, r) => a + r.stars, 0);
+const doneN = () => ACT.filter(s => status(s) === "done").length;
+const allDone = () => doneN() === ACT.length;
+
+let ac;
+function ctx() { if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === "suspended") ac.resume(); return ac; }
+function tone(f, t0, d, type = "sine", v = .15, f2) {
+  const a = ctx(), T = a.currentTime + t0, o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, T); if (f2) o.frequency.exponentialRampToValueAtTime(f2, T + d);
+  g.gain.setValueAtTime(.0001, T); g.gain.exponentialRampToValueAtTime(v, T + .01); g.gain.exponentialRampToValueAtTime(.0001, T + d);
+  o.connect(g); g.connect(a.destination); o.start(T); o.stop(T + d + .05);
+}
+const run = (fs, gap, d, type, v) => fs.forEach((f, i) => tone(f, i * gap, d, type, v));
+const SFX = {
+  click: () => { tone(700, 0, .05, "square", .05); tone(1050, .03, .06, "square", .04); },
+  select: () => tone(900, 0, .06, "triangle", .12, 1200),
+  open: () => run([523, 784], .07, .12, "triangle", .13),
+  on: () => run([659, 880, 1175], .06, .1, "triangle", .13),
+  correct: () => { run([523, 659, 784, 1047], .06, .16, "triangle", .15); run([1047, 1319], .06, .3, "sine", .06); },
+  wrong: () => { tone(260, 0, .16, "sawtooth", .08, 170); tone(190, .12, .26, "sawtooth", .08, 110); },
+  pass: () => { run([523, 659, 784, 1047, 784, 1047, 1319], .09, .2, "triangle", .15); tone(1568, .65, .5, "sine", .1); tone(523, .65, .5, "square", .04); },
+  fail: () => run([392, 349, 330, 262], .13, .22, "triangle", .12),
+  unlock: () => run([988, 1175, 1480, 1976], .07, .18, "sine", .1)
+};
+function beep(n) { if (!st.snd) return; try { SFX[n] && SFX[n](); } catch (e) { } }
+
+function mapSVG() {
+  let sd = 11; const r = () => (sd = sd * 16807 % 2147483647) / 2147483647, R = (a, b) => a + r() * (b - a);
+  const F = [915, 440], P = S.map(s => [s.x, s.y]).concat([F]), pp = [], rv = []; let d = "M" + P[0];
+  for (let i = 1; i < P.length; i++) { const a = P[i - 1], b = P[i], c = i % 2 ? [a[0], b[1]] : [b[0], a[1]]; d += `Q${c} ${b}`;
+    for (let t = 0; t <= 1; t += .1) pp.push([(1 - t) ** 2 * a[0] + 2 * (1 - t) * t * c[0] + t * t * b[0], (1 - t) ** 2 * a[1] + 2 * (1 - t) * t * c[1] + t * t * b[1]]); }
+  const cub = (a, b, c, e, t) => [0, 1].map(k => (1 - t) ** 3 * a[k] + 3 * (1 - t) ** 2 * t * b[k] + 3 * (1 - t) * t * t * c[k] + t ** 3 * e[k]);
+  for (let t = 0; t <= 1; t += .05) { rv.push(cub([690, 40], [620, 140], [700, 230], [560, 320], t)); rv.push(cub([560, 320], [470, 380], [340, 470], [360, 600], t)); }
+  const dist = (p, L) => Math.min(...L.map(q => Math.hypot(p[0] - q[0], p[1] - q[1])));
+  const RV = "M690 40C620 140 700 230 560 320C470 380 340 470 360 600", I = "M60 560Q20 300 150 150Q300 20 520 40Q800 20 950 160Q990 400 900 540Q700 620 450 610Q200 620 60 560Z";
+  const placed = [[105, 270, 95], [925, 260, 50], [915, 440, 60]], O = [];
+  const free = (x, y, m, st = 85) => ((x - 505) / 400) ** 2 + ((y - 325) / 250) ** 2 < 1 && dist([x, y], P) > st && dist([x, y], pp) > 40 && dist([x, y], rv) > 52 && placed.every(q => Math.hypot(x - q[0], y - q[1]) > Math.max(m, q[2] || 0));
+  const put = (n, m, f, st) => { for (let k = 0, c = 0; c < n && k < 900; k++) { const x = R(70, 940), y = R(60, 590); if (free(x, y, m, st)) { placed.push([x, y, m]); O.push([y, f(x, y)]); c++; } } };
+  const sh = (x, y, w) => `<ellipse cx="${x + 4}" cy="${y}" rx="${w}" ry="${w / 3}" fill="#0a3a1a" opacity=".3"/>`;
+  put(46, 34, (x, y) => r() > .45
+    ? `${sh(x, y + 16, 17)}<rect x="${x - 3}" y="${y + 6}" width="6" height="12" fill="#7a4a22"/><circle cx="${x}" cy="${y - 4}" r="17" fill="url(#tg)"/><circle cx="${x - 6}" cy="${y - 10}" r="6" fill="#a6ec6a" opacity=".55"/>`
+    : `${sh(x, y + 16, 15)}<rect x="${x - 3}" y="${y + 8}" width="6" height="9" fill="#7a4a22"/>` + [[14, 6], [0, -8], [-14, -22]].map(([o, w], i) => `<path d="M${x - 17 + i * 2} ${y + 10 + o - 6}L${x} ${y - 24 + o + 10}L${x + 17 - i * 2} ${y + 10 + o - 6}Z" fill="#1e7a3c"/><path d="M${x} ${y - 24 + o + 10}L${x + 17 - i * 2} ${y + 10 + o - 6}L${x} ${y + 10 + o - 6}Z" fill="#2a9a4c"/>`).join(""));
+  const cols = [["#fff1c9", "#e2c98a", "#d9534f", "#a63a37"], ["#d6ecff", "#a9c9e6", "#e08a2e", "#b36a1c"], ["#ffe0e6", "#e6b3be", "#4a7bd0", "#355a9e"]];
+  put(9, 62, (x, y) => { const c = cols[R(0, 3) | 0]; return `${sh(x + 24, y + 30, 36)}<path d="M${x} ${y}L${x + 26} ${y + 8}V${y + 34}L${x} ${y + 26}Z" fill="${c[0]}"/><path d="M${x + 26} ${y + 8}L${x + 52} ${y}V${y + 26}L${x + 26} ${y + 34}Z" fill="${c[1]}"/><path d="M${x - 5} ${y - 1}L${x + 26} ${y - 22}V${y + 11}Z" fill="${c[2]}"/><path d="M${x + 26} ${y - 22}L${x + 57} ${y - 1}L${x + 26} ${y + 11}Z" fill="${c[3]}"/><rect x="${x + 8}" y="${y + 16}" width="7" height="9" fill="#7a4a22"/><rect x="${x + 34}" y="${y + 12}" width="8" height="8" fill="#8fd3ff"/>`; }, 100);
+  put(10, 30, (x, y) => `${sh(x, y + 8, 14)}<path d="M${x - 14} ${y + 8}L${x - 8} ${y - 8}L${x + 4} ${y - 12}L${x + 14} ${y + 8}Z" fill="#9aa3ad"/><path d="M${x + 4} ${y - 12}L${x + 14} ${y + 8}L${x - 2} ${y + 8}Z" fill="#737c87"/>`);
+  put(18, 22, (x, y) => `${sh(x, y + 6, 11)}<circle cx="${x}" cy="${y}" r="9" fill="#2f9e44"/><circle cx="${x - 4}" cy="${y - 4}" r="4" fill="#7bd24a"/><circle cx="${x + 5}" cy="${y - 2}" r="2.5" fill="#ff6fa5"/>`);
+  put(34, 10, (x, y) => `<circle cx="${x}" cy="${y}" r="4" fill="${["#ff6fa5", "#ffd23f", "#fff", "#b48cff"][r() * 4 | 0]}"/><circle cx="${x}" cy="${y}" r="1.5" fill="#f90"/>`, 60);
+  const hill = `<g><ellipse cx="108" cy="318" rx="80" ry="14" fill="#0a3a1a" opacity=".3"/><path d="M30 310L85 215L115 255L140 225L190 310Z" fill="#a0693f"/><path d="M85 215L115 255L100 310H30Z" fill="#c4875a"/><path d="M140 225L190 310H150Z" fill="#7d4e2c"/><path d="M85 215L72 235L85 230L96 240L102 232Z" fill="#fff"/></g>`;
+  const light = `<g><ellipse cx="925" cy="300" rx="24" ry="8" fill="#0a3a1a" opacity=".3"/><path d="M913 295L918 235H932L937 295Z" fill="#fff"/><path d="M915 275H935L936 285H914Z" fill="#e53935"/><path d="M917 250H933L934 260H916Z" fill="#e53935"/><rect x="915" y="224" width="18" height="12" fill="#ffe27a"/><path d="M912 224L924 210L936 224Z" fill="#e53935"/></g>`;
+  const waves = Array.from({ length: 26 }, () => { const x = R(5, 940), y = R(5, 625); return ((x - 505) / 470) ** 2 + ((y - 325) / 300) ** 2 > 1.05 ? `<path class="wave" d="M${x} ${y}q8 -7 16 0q8 7 16 0" fill="none" stroke="#fff" stroke-width="2.5" opacity=".55"/>` : ""; }).join("");
+  const boat = (x, y) => `<g class="boat" transform="translate(${x} ${y})"><path d="M0 0H44L36 14H8Z" fill="#a8693a"/><path d="M22 0V-34L40 -4Z" fill="#fff"/><path d="M22 -34L4 -4H22Z" fill="#ffd23f"/></g>`;
+  const bridges = []; pp.forEach((p, i) => { if (i > 0 && i < pp.length - 1 && dist(p, rv) < 26 && bridges.every(b => Math.hypot(b[0] - p[0], b[1] - p[1]) > 90)) bridges.push([p[0], p[1], Math.atan2(pp[i + 1][1] - pp[i - 1][1], pp[i + 1][0] - pp[i - 1][0]) * 180 / Math.PI]); });
+  const bridgeSVG = bridges.map(b => `<g transform="translate(${b[0]} ${b[1]}) rotate(${b[2]})"><rect x="-44" y="-20" width="88" height="40" rx="6" fill="#00000030" transform="translate(3 5)"/><rect x="-44" y="-17" width="88" height="34" rx="5" fill="#b87a44" stroke="#6b3f1d" stroke-width="2"/>${[-30, -16, -2, 12, 26].map(x => `<line x1="${x}" y1="-17" x2="${x}" y2="17" stroke="#8a5a33" stroke-width="2"/>`).join("")}<rect x="-44" y="-19" width="88" height="4" fill="#5c3416"/><rect x="-44" y="15" width="88" height="4" fill="#5c3416"/></g>`).join("");
+  O.sort((a, b) => a[0] - b[0]);
+  return `<svg viewBox="0 0 1000 640" role="img" aria-label="3D-style cartoon island with a river, bridges, a village, forests, mountains, a lighthouse and seven numbered stations">
+  <defs><linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5ccbe8"/><stop offset="1" stop-color="#1f7fc0"/></linearGradient>
+  <radialGradient id="gr" cx=".5" cy=".4" r=".7"><stop offset="0" stop-color="#b4ec6e"/><stop offset="1" stop-color="#67b83e"/></radialGradient>
+  <radialGradient id="tg" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#4fbf4f"/><stop offset="1" stop-color="#1f7a3c"/></radialGradient><pattern id="chk" width="16" height="12" patternUnits="userSpaceOnUse"><rect width="16" height="12" fill="#fff"/><rect width="8" height="6" fill="#111"/><rect x="8" y="6" width="8" height="6" fill="#111"/></pattern></defs>
+  <rect width="1000" height="640" fill="url(#sea)"/>${waves}
+  <path d="${I}" transform="translate(0 30)" fill="#5c3a1e"/><path d="${I}" transform="translate(0 18)" fill="#8a5a33"/>
+  <path d="${I}" fill="none" stroke="#fff" stroke-width="46" opacity=".35"/><path d="${I}" fill="#f1d58a" stroke="#f1d58a" stroke-width="24"/><path d="${I}" fill="url(#gr)"/>
+  <path d="${RV}" fill="none" stroke="#a6e3fb" stroke-width="48"/><path d="${RV}" fill="none" stroke="#2b8fc7" stroke-width="38"/><path class="river" d="${RV}" fill="none" stroke="#d6f3ff" stroke-width="5"/>
+  <path d="M684 30V60M694 30V64M702 34V58" stroke="#fff" stroke-width="5" opacity=".8"/>
+  <path d="${d}" fill="none" stroke="#a97c48" stroke-width="26" stroke-linecap="round"/><path d="${d}" fill="none" stroke="#dcb77c" stroke-width="18" stroke-linecap="round"/><path d="${d}" fill="none" stroke="#ecd09c" stroke-width="10" stroke-linecap="round" stroke-dasharray="2 16"/>
+  ${bridgeSVG}${hill}${light}${O.map(o => o[1]).join("")}${boat(40, 80)}${boat(930, 600)}
+  <g class="cloud" fill="#fff" opacity=".9"><ellipse cx="170" cy="90" rx="55" ry="20"/><ellipse cx="205" cy="78" rx="38" ry="20"/></g>
+  <g class="cloud b" fill="#fff" opacity=".9"><ellipse cx="620" cy="40" rx="60" ry="18"/><ellipse cx="655" cy="30" rx="34" ry="16"/></g>
+  <g transform="translate(915 440)"><ellipse cy="8" rx="50" ry="10" fill="#0a3a1a" opacity=".3"/><rect x="-42" y="-52" width="8" height="60" fill="#fff" stroke="#555"/><rect x="34" y="-52" width="8" height="60" fill="#fff" stroke="#555"/><rect x="-42" y="-62" width="84" height="20" fill="url(#chk)" stroke="#333" stroke-width="2"/></g><g font-size="20" font-weight="700" fill="#1d2b3a" stroke="#fff" stroke-width="4" paint-order="stroke" text-anchor="middle"><text x="120" y="575">🚩 START</text><text x="915" y="482">🏁 FINISH</text></g></svg>`;
+}
+
+function render() {
+  $("#nick").value = st.name; $("#stars").textContent = stars(); $("#pts").textContent = pts();
+  $("#done").textContent = doneN(); $("#tot").textContent = ACT.length + " of " + S.length;
+  const pc = Math.round(doneN() / ACT.length * 100); $("#bar").value = pc; $("#pct").textContent = pc + "%";
+  $("#snd").textContent = st.snd ? "🔊 Sound on" : "🔇 Sound off"; $("#snd").setAttribute("aria-pressed", st.snd);
+  let m = $("#map"); if (!m.firstChild) m.innerHTML = mapSVG();
+  m.querySelectorAll(".st").forEach(n => n.remove());
+  S.forEach(s => {
+    const k = status(s), b = document.createElement("button");
+    b.className = "st " + k + (s === S[S.length - 1] ? " last" : ""); b.style.left = s.x / 10 + "%"; b.style.top = s.y / 6.4 + "%";
+    b.innerHTML = `<span class="ic" aria-hidden="true">${s.i}</span><b>${s.id}. ${s.t}</b>${LBL[k][0]} ${LBL[k][1]}`;
+    b.setAttribute("aria-label", `Station ${s.id}, ${s.t}${s === S[S.length - 1] ? ", final checkpoint" : ""}, ${LBL[k][1]}`); b.onclick = () => openSt(s.id); m.appendChild(b);
+  });
+  let h = "";
+  [[1, "Information Technology Literacy I"], [2, "Information Technology Literacy II"]].forEach(([mod, name]) => {
+    h += `<h2>${name}</h2><ul>`;
+    S.filter(s => s.m === mod).forEach(s => { const k = status(s); h += `<li><button data-id="${s.id}">${s.id}. ${s.t}<small>${LBL[k][0]} ${LBL[k][1]}</small></button></li>`; });
+    h += "</ul>";
+  });
+  h += `<h2>Achievements</h2><ul>${ach().map(a => `<li>${a[1] ? "🏅" : "🔒"} <b>${a[0]}</b>: ${a[2]} ${a[1] ? "(earned)" : "(not yet)"}</li>`).join("")}</ul>`;
+  h += `<div class="row"><button id="resbtn">📊 View results</button></div>`;
+  $("#side").innerHTML = h;
+  $("#side").querySelectorAll("button[data-id]").forEach(b => b.onclick = () => openSt(+b.dataset.id));
+  $("#resbtn").onclick = results;
+}
+
+function ach() {
+  const d = n => (st.res[n] || {}).pass;
+  return [["First Steps", Object.values(st.res).some(r => r.pass), "Passed a first station quiz."],
+  ["IT Explorer", d(1) && d(2), "Completed Stations 1 and 2."],
+  ["Network Explorer", d(3) && d(4), "Completed Stations 3 and 4."],
+  ["Digital Knowledge Champion", allDone(), "Completed every station that currently has lecture materials."],
+  ["ICT Island Champion", ACT.length === S.length && allDone(), "Completed every station (needs lecture materials for all stations)."]];
+}
+
+const card = h => { const p = $("#panel"); p.hidden = false; p.innerHTML = `<div class="card"><button class="x" aria-label="Close" id="cls">✕</button>${h}</div>`; $("#cls").onclick = closeP; (p.querySelector("h2") || p).tabIndex = -1; p.querySelector("h2").focus(); };
+const closeP = () => { $("#panel").hidden = true; render(); };
+const notesHTML = s => s.notes.map(n => `<div class="note">${n.t} <small>(Slide ${n.p})</small></div>`).join("") + (s.id === 7 ? satDiagram() : "");
+
+function satDiagram() {
+  return `<svg viewBox="0 0 400 230" role="img" aria-label="Diagram: Source ground station sends an uplink to a satellite, the satellite sends a downlink to a destination ground station, and an intersatellite link joins the two satellites" style="width:100%;max-width:460px">
+  <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#a8693a"/></marker></defs>
+  <text x="90" y="40" font-size="26">🛰️</text><text x="270" y="40" font-size="26">🛰️</text><text x="80" y="62" font-size="11">Satellite</text><text x="260" y="62" font-size="11">Satellite</text>
+  <path d="M125 35H265" stroke="#a8693a" stroke-width="3" stroke-dasharray="6 4" marker-end="url(#ar)"/><text x="150" y="26" font-size="12">Intersatellite link</text>
+  <text x="30" y="205" font-size="26">📡</text><text x="330" y="205" font-size="26">📡</text><text x="5" y="224" font-size="11">Source Earth station</text><text x="290" y="224" font-size="11">Destination Earth station</text>
+  <path d="M50 180L95 72" stroke="#a8693a" stroke-width="3" marker-end="url(#ar)"/><text x="12" y="125" font-size="12">Uplink</text>
+  <path d="M290 72L335 180" stroke="#a8693a" stroke-width="3" marker-end="url(#ar)"/><text x="330" y="125" font-size="12">Downlink</text></svg>
+  <p><small>Diagram labels follow Slide 29.</small></p>`;
+}
+
+let cur, qs, qi, ok, sel, done;
+function openSt(id) {
+  cur = S.find(s => s.id === id); const k = status(cur), head = `<h2 id="ptitle">${cur.i} Station ${cur.id}: ${cur.t}</h2>`; beep("open");
+  if (k === "wait") return card(head + `<p class="note">⏳ <b>Awaiting Lecture Materials.</b> This learning activity is not available yet because the source slides for this topic have not been supplied. It cannot be completed until they are.</p>`);
+  if (k === "locked") { const pv = ACT[ACT.indexOf(cur) - 1]; return card(head + `<p class="note">🔒 <b>Locked.</b> Pass Station ${pv.id} (${pv.t}) with at least 70% to unlock this station.</p>`); }
+  const r = st.res[cur.id];
+  card(head + notesHTML(cur) + (r ? `<p>Best score: <b>${r.pct}%</b> · Stars: <b>${r.stars}</b></p>` : "") + `<div class="row"><button id="go">▶ Start Quiz</button></div>`);
+  $("#go").onclick = start;
+}
+function start() { beep("click"); qs = shuf(vq(cur)).slice(0, 5); qi = 0; ok = 0; ask(); }
+function ask() {
+  const q = qs[qi], o = q.w.length === 1 && (q.c === "True" || q.c === "False") ? ["True", "False"] : shuf([q.c, ...q.w]); sel = null; done = false;
+  card(`<h2 id="ptitle">${cur.i} ${cur.t}</h2><p>Question ${qi + 1} of ${qs.length} <progress max="${qs.length}" value="${qi}"></progress></p><p><b>${q.q}</b></p>
+  <div id="opts">${o.map((t, i) => `<button class="opt" aria-pressed="false" data-t="${t.replace(/"/g, "&quot;")}">${t}</button>`).join("")}</div>
+  <div id="fb"></div><div class="row"><button id="sub" disabled>Submit answer</button></div>`);
+  document.querySelectorAll(".opt").forEach(b => b.onclick = () => { if (done) return; sel = b.dataset.t; beep("select"); document.querySelectorAll(".opt").forEach(x => x.setAttribute("aria-pressed", x === b)); $("#sub").disabled = false; });
+  $("#sub").onclick = () => submit(q);
+}
+function submit(q) {
+  if (done || sel === null) return; done = true; const good = sel === q.c; if (good) ok++; beep(good ? "correct" : "wrong");
+  document.querySelectorAll(".opt").forEach(b => { b.disabled = true; if (b.dataset.t === q.c) { b.classList.add("right"); b.innerHTML = "✔ " + b.dataset.t + " (correct)"; } else if (b.dataset.t === sel) { b.classList.add("wrong"); b.innerHTML = "✖ " + b.dataset.t + " (your answer)"; } });
+  $("#fb").innerHTML = `<div class="fb" role="status"><b>${good ? "Correct! +100 points" : "Not quite. +0 points"}</b><br>Correct answer: ${q.c}<br>${q.e} <small>(Slide ${q.p})</small></div>`;
+  const last = qi === qs.length - 1; $("#sub").textContent = last ? "See results" : "Next question"; $("#sub").disabled = false; $("#sub").onclick = last ? finish : () => { beep("click"); qi++; ask(); };
+}
+function finish() {
+  const n = qs.length, pc = Math.round(ok / n * 100), pass = pc >= 70, sr = pc >= 100 ? 3 : pc >= 90 ? 2 : pass ? 1 : 0;
+  const r = st.res[cur.id] || { best: 0, pct: 0, stars: 0, pass: false, tries: 0 };
+  r.tries++; if (pc >= r.pct) { r.best = ok; r.pct = pc; } r.stars = Math.max(r.stars, sr); r.pass = r.pass || pass; st.res[cur.id] = r; save();
+  beep(pass ? "pass" : "fail"); if (pass && ACT[ACT.indexOf(cur) + 1]) setTimeout(() => beep("unlock"), 1100);
+  const k = ACT.indexOf(cur), nx = ACT[k + 1];
+  card(`<h2 id="ptitle">Quiz results</h2><p class="big">${"⭐".repeat(sr) || "—"}</p><p>You answered <b>${ok} of ${n}</b> correctly (<b>${pc}%</b>). ${pass ? "✅ Passed! Station completed." : "❌ You need at least 70%. Review the slide notes and try again."}</p>
+  ${pass && nx ? `<p>🔓 Station ${nx.id} (${nx.t}) is unlocked.</p>` : ""}${pass && !nx ? `<p>🏁 You reached the FINISH! You completed every station that has lecture materials.</p>` : ""}
+  <div class="row"><button id="rt">${pass ? "Retake for a better score" : "Review notes & retry"}</button>${pass && nx ? `<button id="nx">Go to Station ${nx.id}</button>` : ""}${allDone() ? `<button id="rs">View results</button>` : ""}<button id="mp">Back to map</button></div>`);
+  $("#rt").onclick = () => openSt(cur.id); $("#mp").onclick = closeP; if ($("#nx")) $("#nx").onclick = () => openSt(nx.id); if ($("#rs")) $("#rs").onclick = results;
+}
+function results() {
+  const full = ACT.length === S.length && allDone(), wait = S.filter(s => status(s) === "wait");
+  card(`<h2 id="ptitle">Results for ${st.name}</h2>
+  <p>🏆 Points: <b>${pts()}</b> · ⭐ Stars: <b>${stars()}</b> · ✅ Completed: <b>${doneN()}</b> of ${ACT.length} available stations (${Math.round(doneN() / ACT.length * 100)}%)</p>
+  <table><tr><th>Station</th><th>Best score</th><th>Stars</th><th>Status</th></tr>${S.map(s => { const r = st.res[s.id], k = status(s); return `<tr><td>${s.id}. ${s.t}</td><td>${r ? r.pct + "%" : "–"}</td><td>${r ? r.stars : "–"}</td><td>${LBL[k][0]} ${LBL[k][1]}</td></tr>`; }).join("")}</table>
+  <p class="note">${full ? "All stations are complete." : `<b>Available activities: ${allDone() ? "all completed." : "not yet all completed."}</b> Full syllabus: <b>not complete</b>. Awaiting lecture materials: ${wait.map(s => s.t).join(", ") || "none"}.`}</p>
+  <div class="row"><button id="rv">Review Topics</button><button id="pr">Print Results</button></div>`);
+  $("#rv").onclick = closeP; $("#pr").onclick = () => window.print();
+}
+
+$("#nick").onchange = e => { st.name = e.target.value.trim() || "Explorer"; save(); render(); };
+$("#snd").onclick = () => { st.snd = !st.snd; save(); render(); beep("on"); };
+$("#reset").onclick = () => { if (confirm("Reset all progress?")) { st = { name: "Explorer", res: {}, snd: true }; save(); render(); } };
+$("#menu").onclick = e => { const s = $("#side"); s.hidden = !s.hidden; e.target.setAttribute("aria-expanded", !s.hidden); };
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#panel").hidden) closeP(); });
+if (innerWidth < 820) { $("#side").hidden = true; $("#menu").setAttribute("aria-expanded", "false"); }
+render();
+
+</script>
+</body>
+</html>
